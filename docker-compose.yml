@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.2
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.2
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    # volumes: # Optional: mount volume to persist Kafka data
+    #   - ./kafka-data:/var/lib/kafka/data
+
+  scheduler:
+    build:
+      context: ./scheduler
+      dockerfile: Dockerfile
+    container_name: scheduler
+    depends_on:
+      - kafka
+    environment:
+      # --- User-provided Database/Redis Connection ---
+      REDIS_HOST: "10.14.119.8"
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: "redis@6379"
+      REDIS_DB: "0"
+      
+      MYSQL_HOST: "10.14.119.8"
+      MYSQL_PORT: "3306"
+      MYSQL_USER: "appuser"
+      MYSQL_PASSWORD: "Admin123$"
+      MYSQL_DATABASE: "crawler"
+      MYSQL_CONNECTION_LIMIT: "2048" # Note: Application code needs to utilize this
+
+      # --- Kafka Connection ---
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092" # Changed to internal Kafka port
+      CRAWL_JOBS_TOPIC: "crawl_jobs"
+      
+      # --- Celery specific (can be overridden by .env or code if needed) ---
+      # CELERY_BROKER_URL: "redis://10.14.119.8:6379/0" # Example if using Redis as broker
+      # CELERY_RESULT_BACKEND: "redis://10.14.119.8:6379/0" # Example
+
+      # ... other environment variables for scheduler ...
+    volumes:
+      - ./scheduler/src:/app/src # Mount source code for development
+    command: ["celery", "-A", "src.app:celery_app", "beat", "-l", "INFO", "--pidfile=/tmp/celerybeat.pid"]
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: worker # This can be scaled
+    depends_on:
+      - kafka
+    environment:
+      # --- User-provided Database/Redis Connection ---
+      REDIS_HOST: "10.14.119.8"
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: "redis@6379"
+      REDIS_DB: "0"
+
+      MYSQL_HOST: "10.14.119.8"
+      MYSQL_PORT: "3306"
+      MYSQL_USER: "appuser"
+      MYSQL_PASSWORD: "Admin123$"
+      MYSQL_DATABASE: "crawler"
+      MYSQL_CONNECTION_LIMIT: "2048" # Note: Application code needs to utilize this
+
+      # --- Kafka Connection ---
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092" # Changed to internal Kafka port
+      CRAWL_JOBS_TOPIC: "crawl_jobs"
+      CRAWL_RESULTS_TOPIC: "crawl_results" # For worker to publish results
+      DEFAULT_DLQ_TOPIC: "crawl_jobs_dlq" # Default DLQ for failed jobs
+
+      # --- Celery specific (can be overridden by .env or code if needed) ---
+      # CELERY_BROKER_URL: "redis://10.14.119.8:6379/0" # Example if using Redis as broker for Celery tasks
+      # CELERY_RESULT_BACKEND: "redis://10.14.119.8:6379/0" # Example
+      
+      # ... other environment variables for worker, including API secrets ...
+      # Example: MYINVOIS_CLIENT_ID: "your_actual_client_id"
+      # Example: MYINVOIS_CLIENT_SECRET: "your_actual_client_secret"
+    volumes:
+      - ./worker/src:/app/src # Mount source code for development
+    command: ["celery", "-A", "src.tasks:celery_app", "worker", "-l", "INFO", "-c", "${CELERY_WORKER_CONCURRENCY:-4}"]
+    deploy: # For scaling with docker stack deploy or compose v2.1+
+      replicas: 1 # Start with 1 replica, can be scaled using: docker-compose up --scale worker=N
+
+networks:
+  default:
+    driver: bridge
+
+# volumes: # Declare if using named volumes for Kafka
+#   kafka-data:

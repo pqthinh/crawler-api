@@ -1,0 +1,7 @@
+celery[redis]>=5.3.6  # Includes redis for result backend or beat schedule db if needed
+python-dotenv>=1.0.0
+mysql-connector-python>=8.0.33
+kafka-python>=2.0.2 # Or aiokafka for async operations
+pydantic>=2.5.0 # pydantic core is needed for pydantic_settings
+pydantic-settings>=2.2.0 # For BaseSettings
+# SQLAlchemy>=2.0 # If using SQLAlchemy ORM for DB interaction 

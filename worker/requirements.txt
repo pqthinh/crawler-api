@@ -1,0 +1,10 @@
+celery[redis]>=5.3.6
+python-dotenv>=1.0.0
+mysql-connector-python>=8.0.33
+kafka-python>=2.0.2 # Or aiokafka
+requests>=2.31.0
+ratelimit>=2.2.1
+jsonpath-ng>=1.6.0
+pydantic>=2.5.0 # For data validation and settings management, and pydantic-settings
+pydantic-settings>=2.2.0 # For BaseSettings
+# SQLAlchemy>=2.0 

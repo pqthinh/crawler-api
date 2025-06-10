@@ -1,0 +1,62 @@
+curl --location 'https://preprod-api.myinvois.hasil.gov.my/connect/token' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--data-urlencode 'client_id=bce02ebc-ad7c-4139-b383-3f674c8b9c90' \
+--data-urlencode 'client_secret=c9e7f825-d554-458d-9476-b1d73ade3b1a' \
+--data-urlencode 'grant_type=client_credentials' \
+--data-urlencode 'scope=InvoicingAPI'
+
+{
+    "access_token": "eyJh",
+    "expires_in": 3600,
+    "token_type": "Bearer",
+    "scope": "InvoicingAPI"
+}
+
+
+curl --location 'https://preprod-api.myinvois.hasil.gov.my/api/v1.0/documents/search?pageSize=100&issueDateFrom=2025-01-01&issueDateTo=2025-01-15&pageNo=1' \
+--header 'Authorization: Bearer eyJhbGci'
+
+{
+    "result": [
+        {
+            "totalExcludingTax": 8225.0,
+            "totalDiscount": 0.0,
+            "totalNetAmount": 0.0,
+            "totalPayableAmount": 8883.0,
+            "uuid": "68J3W9S32W8PE0F20VS3MQGJ10",
+            "submissionUid": "VG8B0BSH2F53T6YT0VS3MQGJ10",
+            "longId": "EVKT8P2Q711CCY5Y0VS3MQGJ103MMlQb1735959635",
+            "internalId": "TEST_SST",
+            "typeName": "Invoice",
+            "typeVersionName": "1.1",
+            "supplierTIN": "C20608650040",
+            "supplierName": "FPT Software Malaysia Sdn.Bhd",
+            "buyerName": "FPT Software Malaysia Sdn.Bhd",
+            "buyerTIN": "C20608650040",
+            "receiverID": "200801010917",
+            "receiverTIN": "C20608650040",
+            "receiverName": "FPT Software Malaysia Sdn.Bhd",
+            "receiverIDType": "BRN",
+            "dateTimeIssued": "2025-01-04T00:00:01+00:00",
+            "dateTimeReceived": "2025-01-04T03:00:35.8078278Z",
+            "status": "Valid",
+            "cancelDateTime": null,
+            "rejectRequestDateTime": null,
+            "documentStatusReason": null,
+            "submissionChannel": "ERP",
+            "intermediaryName": null,
+            "intermediaryTIN": null,
+            "intermediaryROB": null,
+            "createdByUserId": "C20608650040:bce02ebc-ad7c-4139-b383-3f674c8b9c90",
+            "issuerTIN": "C20608650040",
+            "issuerID": "200801010917",
+            "issuerIDType": "BRN",
+            "dateTimeValidated": "2025-01-04T03:00:37.7407136Z",
+            "documentCurrency": "MYR"
+        }
+    ],
+    "metadata": {
+        "totalPages": 1,
+        "totalCount": 30
+    }
+}
